@@ -1,0 +1,15 @@
+[package]
+name = "url2"
+version = "0.0.1"
+authors = ["neonphog <neonphog@gmail.com>"]
+edition = "2018"
+description = "ergonomic wrapper around the popular url crate"
+keywords = ["url", "parser"]
+categories = ["parser-implementations", "web-programming", "encoding"]
+license = "MIT/Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/url2"
+repository = "https://github.com/neonphog/url2"
+
+[dependencies]
+url = "2.1"
