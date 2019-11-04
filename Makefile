@@ -12,6 +12,12 @@ ENV = RUSTFLAGS='$(RUSTFLAGS)' CARGO_BUILD_JOBS='$(shell nproc || sysctl -n hw.p
 
 all: test
 
+publish: tools
+	git diff --exit-code
+	cargo publish
+	VER="v$$(grep version Cargo.toml | cut -d ' ' -f 3 | cut -d \" -f 2)"; git commit -a $$VER -m $$VER
+	git push --tags
+
 test: tools
 	$(ENV) cargo fmt -- --check
 	$(ENV) cargo clippy -- \
@@ -20,7 +26,7 @@ test: tools
 		-D clippy::complexity -D clippy::perf -D clippy::correctness
 	$(ENV) RUST_BACKTRACE=1 cargo test
 	$(ENV) cargo readme -o README.md
-	if [ "${CI}x" != "x" ]; then git diff --exit-code; fi
+	@if [ "${CI}x" != "x" ]; then git diff --exit-code; fi
 
 fmt: tools
 	cargo fmt
