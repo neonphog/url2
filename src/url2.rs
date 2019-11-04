@@ -297,6 +297,12 @@ impl std::convert::From<Url> for Url2 {
     }
 }
 
+impl std::convert::From<&Url> for Url2 {
+    fn from(url: &Url) -> Url2 {
+        Url2::priv_new(url.clone())
+    }
+}
+
 impl std::convert::From<Url2> for Url {
     fn from(url: Url2) -> Url {
         url.url
@@ -325,6 +331,8 @@ mod tests {
         let url = Url2::default();
         let url: Url = url.into();
         let url: Url2 = url.into();
+        let url: Url = url.into();
+        let url: Url2 = (&url).into();
         assert_eq!("none:", url.as_str());
     }
 
