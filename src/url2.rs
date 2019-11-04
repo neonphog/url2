@@ -334,10 +334,7 @@ mod tests {
         url.query_unique()
             .set_pair("a", "test1")
             .set_pair("b", "test2");
-        assert!(
-            "none:?a=test1&b=test2" == url.as_str()
-                || "none:?b=test2&a=test1" == url.as_str()
-        );
+        assert!("none:?a=test1&b=test2" == url.as_str() || "none:?b=test2&a=test1" == url.as_str());
         assert_eq!(true, url.query_unique_contains_key("a"));
         assert_eq!(false, url.query_unique_contains_key("c"));
         assert_eq!(Some("test1"), url.query_unique_get("a"));

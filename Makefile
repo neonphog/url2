@@ -20,6 +20,7 @@ test: tools
 		-D clippy::complexity -D clippy::perf -D clippy::correctness
 	$(ENV) RUST_BACKTRACE=1 cargo test
 	$(ENV) cargo readme -o README.md
+	if [ "${CI}x" != "x" ]; then git diff --exit-code; fi
 
 fmt: tools
 	cargo fmt
