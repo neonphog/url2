@@ -3,58 +3,127 @@ use url::Url;
 
 use crate::*;
 
-#[derive(Debug, Clone)]
-/// An ergonomic wrapper around the popular Url crate
-///
-/// provides:
-///  - a panic!ing `Url2::parse()` function that gives a direct instance
-///  - a `Url2::try_parse()` function that returns a Result
-///  - some additional conversion utility implementations
-///  - a "unique key" view into the query string (see `Url2::query_unique()`)
+#[derive(Clone)]
+/// Ergonomic wrapper around the popular Url crate
 pub struct Url2 {
     pub(crate) url: Url,
     pub(crate) unique_cache: Option<HashMap<String, String>>,
 }
 
 impl Url2 {
-    /// would love to use std::convert::TryFrom, except for conflicting
-    /// blanket implementation: https://github.com/rust-lang/rust/issues/50133
+    // would love to use std::convert::TryFrom, except for conflicting
+    // blanket implementation: https://github.com/rust-lang/rust/issues/50133
+    /// Try to parse a utf8 slice into a Url2 instance.
+    /// May result in a UrlParseError
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use url2::prelude::*;
+    ///
+    /// assert_eq!(
+    ///     "Err(Url2Error(UrlParseError(RelativeUrlWithoutBase)))",
+    ///     &format!("{:?}", Url2::try_parse("")),
+    /// );
+    /// assert_eq!(
+    ///     "Ok(Url2 { url: \"none:\" })",
+    ///     &format!("{:?}", Url2::try_parse("none:")),
+    /// );
+    /// ```
     pub fn try_parse<S: AsRef<str>>(s: S) -> Url2Result<Self> {
         Ok(Url2::priv_new(Url::parse(s.as_ref())?))
     }
 
-    /// would love to use std::convert::From, except for conflicting
-    /// blanket implementation: https://github.com/rust-lang/rust/issues/50133
+    // would love to use std::convert::From, except for conflicting
+    // blanket implementation: https://github.com/rust-lang/rust/issues/50133
+    /// Try to parse a utf8 slice into a Url2 instance.
+    /// If this results in a UrlParseError, this method will panic!
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use url2::prelude::*;
+    ///
+    /// assert_eq!("none:", Url2::parse("none:").as_str());
+    /// ```
     pub fn parse<S: AsRef<str>>(s: S) -> Self {
         Self::try_parse(s).unwrap()
     }
 
     /// convert this Url2 instance into a string
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use url2::prelude::*;
+    ///
+    /// assert_eq!("none:", Url2::default().as_str());
+    /// ```
     pub fn into_string(self) -> String {
         self.into()
     }
 
-    /// generates a hashed map of query keys on first call
-    /// subsequent calls will use this existing cache
-    /// returns an instance that dereferences to a HashMap<String, String>
-    /// for manipulating the query string requiring unique keys
-    /// (i.e. setting the same key again will overwrite the previous key)
-    /// while query strings technically can have duplicate keys,
-    /// unique keys are a common use-case, an this makes that case more ergonomic.
-    /// When the returned instance is dropped, the underlying querystring
-    /// will be updated to reflect any changes made to the HashMap.
+    /// Access query string entries as a unique key map.
+    ///
+    /// Url query strings support multiple instances of the same key
+    /// However, many common use-cases treat the query string
+    /// keys as unique entries in a map. An optional API viewing the
+    /// query string in this manner can be more ergonomic.
+    ///
+    /// The HashMap that backs this view is only created the first time this
+    /// function (or the following query_unique_* functions) are invoked.
+    /// If you do not use them, there is no additional overhead.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use url2::prelude::*;
+    ///
+    /// let mut url = Url2::default();
+    /// url.query_unique().set_pair("a", "1").set_pair("a", "2");
+    ///
+    /// assert_eq!("none:?a=2", url.as_str());
+    /// ```
     pub fn query_unique(&mut self) -> Url2QueryUnique {
         self.priv_ensure_query_unique_cache();
         Url2QueryUnique { url_ref: self }
     }
 
-    /// when parsed as a unique map, does the query string contain given key?
+    /// When parsed as a unique map, does the query string contain given key?
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use url2::prelude::*;
+    ///
+    /// let mut url = Url2::parse("none:?a=1");
+    ///
+    /// assert!(url.query_unique_contains_key("a"));
+    /// assert!(!url.query_unique_contains_key("b"));
+    /// ```
     pub fn query_unique_contains_key(&mut self, key: &str) -> bool {
         self.priv_ensure_query_unique_cache();
         self.unique_cache.as_ref().unwrap().contains_key(key)
     }
 
-    /// when parsed as a unique map, get the value for given key
+    /// When parsed as a unique map, get the value for given key
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use url2::prelude::*;
+    ///
+    /// let mut url = Url2::parse("none:?a=1");
+    ///
+    /// assert_eq!(
+    ///     "Some(\"1\")",
+    ///     &format!("{:?}", url.query_unique_get("a")),
+    /// );
+    /// assert_eq!(
+    ///     "None",
+    ///     &format!("{:?}", url.query_unique_get("b")),
+    /// );
+    /// ```
     pub fn query_unique_get(&mut self, key: &str) -> Option<&str> {
         self.priv_ensure_query_unique_cache();
         match self.unique_cache.as_ref().unwrap().get(key) {
@@ -105,6 +174,14 @@ impl Url2 {
         for (k, v) in all.drain(..) {
             self.unique_cache.as_mut().unwrap().insert(k, v);
         }
+    }
+}
+
+impl std::fmt::Debug for Url2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Url2")
+            .field("url", &self.url.as_str())
+            .finish()
     }
 }
 
@@ -248,7 +325,7 @@ mod tests {
         let url = Url2::default();
         let url: Url = url.into();
         let url: Url2 = url.into();
-        assert_eq!("none:", &url.to_string());
+        assert_eq!("none:", url.as_str());
     }
 
     #[test]
@@ -258,8 +335,8 @@ mod tests {
             .set_pair("a", "test1")
             .set_pair("b", "test2");
         assert!(
-            "none:?a=test1&b=test2" == &url.to_string()
-                || "none:?b=test2&a=test1" == &url.to_string()
+            "none:?a=test1&b=test2" == url.as_str()
+                || "none:?b=test2&a=test1" == url.as_str()
         );
         assert_eq!(true, url.query_unique_contains_key("a"));
         assert_eq!(false, url.query_unique_contains_key("c"));

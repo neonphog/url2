@@ -1,7 +1,7 @@
 /// Url2 Result Type
 pub type Url2Result<T> = Result<T, Url2Error>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// Represents a Url2 Error
 pub struct Url2Error(Box<Url2ErrorKind>);
 
@@ -47,7 +47,7 @@ impl std::convert::From<url::ParseError> for Url2Error {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 /// enum representing the type of Url2Error
 pub enum Url2ErrorKind {
     /// Url Parsing Error
