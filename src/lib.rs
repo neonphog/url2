@@ -3,22 +3,25 @@
 //! # Example
 //!
 //! ```rust
-//! use url2::prelude::*;
+//! #[macro_use]
+//! extern crate url2;
 //!
-//! let mut url = Url2::parse("https://example.com/");
-//! url.query_unique()
-//!     .set_pair("hello", "world")
-//!     .set_pair("foo", "bar");
+//! fn main() {
+//!     let mut url = url2!("https://{}/", "example.com");
+//!     url.query_unique()
+//!         .set_pair("hello", "world")
+//!         .set_pair("foo", "bar");
 //!
-//! assert!(url.query_unique_contains_key("hello"));
-//! assert_eq!("bar", url.query_unique_get("foo").unwrap());
+//!     assert!(url.query_unique_contains_key("hello"));
+//!     assert_eq!("bar", url.query_unique_get("foo").unwrap());
 //!
-//! url.query_unique().remove("foo");
+//!     url.query_unique().remove("foo");
 //!
-//! assert_eq!(
-//!     "https://example.com/?hello=world",
-//!     url.as_str(),
-//! )
+//!     assert_eq!(
+//!         "https://example.com/?hello=world",
+//!         url.as_str(),
+//!     )
+//! }
 //! ```
 
 extern crate url;
@@ -32,8 +35,36 @@ pub use crate::query_unique::*;
 mod url2;
 pub use crate::url2::*;
 
+/// works like the `format!()` macro, but passes the result through Url2::try_parse()
+#[macro_export]
+macro_rules! try_url2 {
+    ($($e:expr),+) => {
+        ::url2::Url2::try_parse(&format!($($e),+))
+    };
+    ($($e:expr),+,) => {
+        ::url2::Url2::try_parse(&format!($($e),+))
+    };
+}
+
+/// works like the `format!()` macro, but passes the result through Url2::parse()
+#[macro_export]
+macro_rules! url2 {
+    ($($e:expr),+) => {
+        try_url2!($($e),+).unwrap()
+    };
+    ($($e:expr),+,) => {
+        try_url2!($($e),+).unwrap()
+    };
+}
+
 pub mod prelude {
     // currently, just export everything
     // at some point, we may be more selective
     pub use super::*;
 }
+
+/*
+#[cfg(test)]
+mod tests {
+}
+*/

@@ -1,6 +1,6 @@
 [package]
 name = "url2"
-version = "0.0.3"
+version = "0.0.4"
 authors = ["neonphog <neonphog@gmail.com>"]
 edition = "2018"
 description = "ergonomic wrapper around the popular url crate"
