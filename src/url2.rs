@@ -323,7 +323,11 @@ mod tests {
     fn it_can_parse() {
         let url_a = Url2::try_parse("test:bob").unwrap();
         let url_b = Url2::parse("test:bob");
+        let url_c = try_url2!("{}:{}", "test", "bob").unwrap();
+        let url_d = url2!("{}:{}", "test", "bob");
         assert_eq!(url_a, url_b);
+        assert_eq!(url_a, url_c);
+        assert_eq!(url_a, url_d);
     }
 
     #[test]

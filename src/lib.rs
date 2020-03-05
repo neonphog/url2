@@ -39,10 +39,10 @@ pub use crate::url2::*;
 #[macro_export]
 macro_rules! try_url2 {
     ($($e:expr),+) => {
-        ::url2::Url2::try_parse(&format!($($e),+))
+        $crate::Url2::try_parse(&format!($($e),+))
     };
     ($($e:expr),+,) => {
-        ::url2::Url2::try_parse(&format!($($e),+))
+        $crate::Url2::try_parse(&format!($($e),+))
     };
 }
 
@@ -50,10 +50,10 @@ macro_rules! try_url2 {
 #[macro_export]
 macro_rules! url2 {
     ($($e:expr),+) => {
-        try_url2!($($e),+).unwrap()
+        $crate::Url2::parse(&format!($($e),+))
     };
     ($($e:expr),+,) => {
-        try_url2!($($e),+).unwrap()
+        $crate::Url2::parse(&format!($($e),+))
     };
 }
 
