@@ -40,8 +40,8 @@ impl<'lt> Url2QueryUnique<'lt> {
     /// );
     /// ```
     pub fn set_pair(self, name: &str, value: &str) -> Self {
-        self.url_ref
-            .unique_cache
+        (self.url_ref.0)
+            .1
             .as_mut()
             .unwrap()
             .insert(name.to_string(), value.to_string());
@@ -59,12 +59,12 @@ impl<'lt> std::ops::Deref for Url2QueryUnique<'lt> {
     type Target = HashMap<String, String>;
 
     fn deref(&self) -> &Self::Target {
-        self.url_ref.unique_cache.as_ref().unwrap()
+        (self.url_ref.0).1.as_ref().unwrap()
     }
 }
 
 impl<'lt> std::ops::DerefMut for Url2QueryUnique<'lt> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.url_ref.unique_cache.as_mut().unwrap()
+        (self.url_ref.0).1.as_mut().unwrap()
     }
 }

@@ -1,3 +1,6 @@
+#![forbid(missing_docs)]
+#![forbid(warnings)]
+#![forbid(unsafe_code)]
 //! Url2: Ergonomic wrapper around the popular url crate
 //!
 //! # Example
@@ -57,6 +60,7 @@ macro_rules! url2 {
     };
 }
 
+/// Everything you need to work with the Url2 library.
 pub mod prelude {
     // currently, just export everything
     // at some point, we may be more selective

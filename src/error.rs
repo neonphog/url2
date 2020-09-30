@@ -21,7 +21,6 @@ impl std::error::Error for Url2Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match *self.0 {
             Url2ErrorKind::UrlParseError(ref err) => Some(err),
-            _ => None,
         }
     }
 }
@@ -30,7 +29,6 @@ impl std::fmt::Display for Url2Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self.0 {
             Url2ErrorKind::UrlParseError(ref err) => err.fmt(f),
-            _ => write!(f, "Url2Error::Unknown"),
         }
     }
 }
@@ -48,12 +46,9 @@ impl std::convert::From<url::ParseError> for Url2Error {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 /// enum representing the type of Url2Error
 pub enum Url2ErrorKind {
     /// Url Parsing Error
     UrlParseError(url::ParseError),
-
-    // allow expansion
-    #[doc(hidden)]
-    __Nonexhaustive,
 }

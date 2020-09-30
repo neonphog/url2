@@ -5,10 +5,7 @@ use crate::*;
 
 #[derive(Clone)]
 /// Ergonomic wrapper around the popular Url crate
-pub struct Url2 {
-    pub(crate) url: Url,
-    pub(crate) unique_cache: Option<HashMap<String, String>>,
-}
+pub struct Url2(pub(crate) Box<(Url, Option<HashMap<String, String>>)>);
 
 impl Url2 {
     // would love to use std::convert::TryFrom, except for conflicting
@@ -103,7 +100,7 @@ impl Url2 {
     /// ```
     pub fn query_unique_contains_key(&mut self, key: &str) -> bool {
         self.priv_ensure_query_unique_cache();
-        self.unique_cache.as_ref().unwrap().contains_key(key)
+        (self.0).1.as_ref().unwrap().contains_key(key)
     }
 
     /// When parsed as a unique map, get the value for given key
@@ -126,7 +123,7 @@ impl Url2 {
     /// ```
     pub fn query_unique_get(&mut self, key: &str) -> Option<&str> {
         self.priv_ensure_query_unique_cache();
-        match self.unique_cache.as_ref().unwrap().get(key) {
+        match (self.0).1.as_ref().unwrap().get(key) {
             None => None,
             // silly dance to convert &String to &str
             Some(s) => Some(s),
@@ -137,18 +134,16 @@ impl Url2 {
 
     /// private constructor, you probably want `Url2::try_parse()`
     fn priv_new(url: Url) -> Self {
-        Self {
-            url,
-            unique_cache: None,
-        }
+        Self(Box::new((url, None)))
     }
 
     /// generate our unique query string entry cache if we haven't already
     fn priv_ensure_query_unique_cache(&mut self) {
-        if self.unique_cache.is_none() {
-            std::mem::replace(&mut self.unique_cache, Some(HashMap::new()));
-            for (k, v) in self.url.query_pairs() {
-                self.unique_cache
+        if (self.0).1.is_none() {
+            let _ = std::mem::replace(&mut (self.0).1, Some(HashMap::new()));
+            for (k, v) in (self.0).0.query_pairs() {
+                (self.0)
+                    .1
                     .as_mut()
                     .unwrap()
                     .insert(k.to_string(), v.to_string());
@@ -158,12 +153,7 @@ impl Url2 {
 
     /// if changes have been made to our query unique cache, apply them
     pub(crate) fn priv_sync_query_unique_cache(&mut self) {
-        let mut all = self
-            .unique_cache
-            .as_mut()
-            .unwrap()
-            .drain()
-            .collect::<Vec<_>>();
+        let mut all = (self.0).1.as_mut().unwrap().drain().collect::<Vec<_>>();
         {
             let mut pairs = self.query_pairs_mut();
             pairs.clear();
@@ -172,40 +162,59 @@ impl Url2 {
             }
         }
         for (k, v) in all.drain(..) {
-            self.unique_cache.as_mut().unwrap().insert(k, v);
+            (self.0).1.as_mut().unwrap().insert(k, v);
         }
+    }
+}
+
+impl serde::Serialize for Url2 {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        (self.0).0.serialize(serializer)
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for Url2 {
+    fn deserialize<D>(deserializer: D) -> Result<Url2, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let url: Url = serde::Deserialize::deserialize(deserializer)?;
+        Ok(Url2::priv_new(url))
     }
 }
 
 impl std::fmt::Debug for Url2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Url2")
-            .field("url", &self.url.as_str())
+            .field("url", &(self.0).0.as_str())
             .finish()
     }
 }
 
 impl std::cmp::PartialOrd for Url2 {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.url.partial_cmp(&other.url)
+        (self.0).0.partial_cmp(&(other.0).0)
     }
 }
 
 impl std::cmp::PartialOrd<Url> for Url2 {
     fn partial_cmp(&self, other: &Url) -> Option<std::cmp::Ordering> {
-        self.url.partial_cmp(other)
+        (self.0).0.partial_cmp(other)
     }
 }
 
 impl std::cmp::Ord for Url2 {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.url.cmp(&other.url)
+        (self.0).0.cmp(&(other.0).0)
     }
 }
 
 impl std::cmp::PartialEq for Url2 {
     fn eq(&self, other: &Self) -> bool {
-        self.url.eq(&other.url)
+        (self.0).0.eq(&(other.0).0)
     }
 }
 
@@ -213,19 +222,19 @@ impl std::cmp::Eq for Url2 {}
 
 impl std::cmp::PartialEq<Url> for Url2 {
     fn eq(&self, other: &Url) -> bool {
-        self.url.eq(&other)
+        (self.0).0.eq(&other)
     }
 }
 
 impl std::hash::Hash for Url2 {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.url.hash(state);
+        (self.0).0.hash(state);
     }
 }
 
 impl std::fmt::Display for Url2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.url)
+        write!(f, "{}", (self.0).0)
     }
 }
 
@@ -243,13 +252,13 @@ impl std::default::Default for Url2 {
 
 impl std::convert::AsRef<str> for Url2 {
     fn as_ref(&self) -> &str {
-        self.url.as_ref()
+        (self.0).0.as_ref()
     }
 }
 
 impl std::borrow::Borrow<str> for Url2 {
     fn borrow(&self) -> &str {
-        self.url.as_ref()
+        (self.0).0.as_ref()
     }
 }
 
@@ -257,37 +266,37 @@ impl std::ops::Deref for Url2 {
     type Target = Url;
 
     fn deref(&self) -> &Self::Target {
-        &self.url
+        &(self.0).0
     }
 }
 
 impl std::ops::DerefMut for Url2 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.url
+        &mut (self.0).0
     }
 }
 
 impl std::borrow::Borrow<Url> for Url2 {
     fn borrow(&self) -> &Url {
-        &self.url
+        &(self.0).0
     }
 }
 
 impl std::borrow::BorrowMut<Url> for Url2 {
     fn borrow_mut(&mut self) -> &mut Url {
-        &mut self.url
+        &mut (self.0).0
     }
 }
 
 impl std::convert::AsRef<Url> for Url2 {
     fn as_ref(&self) -> &Url {
-        &self.url
+        &(self.0).0
     }
 }
 
 impl std::convert::AsMut<Url> for Url2 {
     fn as_mut(&mut self) -> &mut Url {
-        &mut self.url
+        &mut (self.0).0
     }
 }
 
@@ -305,13 +314,27 @@ impl std::convert::From<&Url> for Url2 {
 
 impl std::convert::From<Url2> for Url {
     fn from(url: Url2) -> Url {
-        url.url
+        (url.0).0
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn it_is_small_for_enum_usage() {
+        assert_eq!(std::mem::size_of::<usize>(), std::mem::size_of::<Url2>());
+    }
+
+    #[test]
+    fn it_can_serialize_deserialize() {
+        let url = Url2::parse("s://u:p@h:42/a/b?a=b&c=d#e");
+        let json = serde_json::to_string(&url).unwrap();
+        assert_eq!("\"s://u:p@h:42/a/b?a=b&c=d#e\"", json);
+        let de: Url2 = serde_json::from_str(&json).unwrap();
+        assert_eq!(url, de);
+    }
 
     #[test]
     fn it_can_display() {
@@ -346,7 +369,10 @@ mod tests {
         url.query_unique()
             .set_pair("a", "test1")
             .set_pair("b", "test2");
-        assert!("none:?a=test1&b=test2" == url.as_str() || "none:?b=test2&a=test1" == url.as_str());
+        assert!(
+            "none:?a=test1&b=test2" == url.as_str()
+                || "none:?b=test2&a=test1" == url.as_str()
+        );
         assert_eq!(true, url.query_unique_contains_key("a"));
         assert_eq!(false, url.query_unique_contains_key("c"));
         assert_eq!(Some("test1"), url.query_unique_get("a"));
