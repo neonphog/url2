@@ -5,13 +5,14 @@ extern crate url2;
 fn it_can_try_parse_macro() {
     assert_eq!(
         "test://bob/?a=42",
-        &try_url2!("{}://{}?a={}", "test", "bob", 42)
+        &try_url2!("{}://{}/?a={}", "test", "bob", 42)
             .unwrap()
             .to_string(),
     );
+    // with trailing comma
     assert_eq!(
         "test://bob/?a=42",
-        &try_url2!("{}://{}?a={}", "test", "bob", 42,)
+        &try_url2!("{}://{}/?a={}", "test", "bob", 42,)
             .unwrap()
             .to_string(),
     );
@@ -21,10 +22,11 @@ fn it_can_try_parse_macro() {
 fn it_can_parse_macro() {
     assert_eq!(
         "test://bob/?a=42",
-        &url2!("{}://{}?a={}", "test", "bob", 42).to_string(),
+        &url2!("{}://{}/?a={}", "test", "bob", 42).to_string(),
     );
+    // with trailing comma
     assert_eq!(
         "test://bob/?a=42",
-        &url2!("{}://{}?a={}", "test", "bob", 42,).to_string(),
+        &url2!("{}://{}/?a={}", "test", "bob", 42,).to_string(),
     );
 }
